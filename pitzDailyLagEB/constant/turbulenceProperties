@@ -22,7 +22,7 @@ RAS
     // Tested with kEpsilonLagEB, realizableKE, kOmega, kOmegaSST,
     // ShihQuadraticKE, LienCubicKE.
     //RASModel        kEpsilonEB;
-    RASModel        kEpsilonLagEB;
+    RASModel        kOmegaLagEB;
     turbulence      on;
 
     printCoeffs     on;

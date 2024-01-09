@@ -68,7 +68,7 @@ template<class BasicTurbulenceModel>
 tmp<volScalarField> kOmegaLagEB<BasicTurbulenceModel>::Ls() const
 {
     return
-        CL_*(
+        CL_*sqrt(
         max(pow3(k_)/sqr(betas_*k_*omega_), 
             dimensionedScalar(sqr(dimLength), Zero))
         + sqr(Ceta_)
@@ -483,7 +483,8 @@ void kOmegaLagEB<BasicTurbulenceModel>::correct()
     // Anisotropy tensor (TLLP:Eq.18)
     volTensorField A
     (
-        -2*nut/k_*(S + 2.0*(2.0-2.0*C5_)/(C1_+C1s_+1.0)*((S&WTilde)-(WTilde&S))/(mag(S+WTilde)))
+        -2*nut/k_*(S + 2.0*(2.0-2.0*C5_)/(C1_+C1s_+1.0)
+        *((S&WTilde)-(WTilde&S))/(mag(S+WTilde)))
     );
 
     volScalarField taus(1.0/magS);
@@ -516,15 +517,6 @@ void kOmegaLagEB<BasicTurbulenceModel>::correct()
             mag(fvc::grad(ebf_)), dimensionedScalar(dimless/dimLength, SMALL)
             )
     );
-<<<<<<< HEAD:TurbulenceModels/turbulenceModels/RAS/kOmegaLagEB/kOmegaLagEB.C
-=======
-
-    // Additional production term in epsilon eq. (TLLP:Eq.7)
-    volScalarField E
-    (
-        CK_*pow3(1-ebf_)*this->nu()*nut*sqr(fvc::div(mag(2*S&n)*n))
-    );
->>>>>>> a80eac07f3022065ae298f70cb79ddf566f0fe6f:TurbulenceModels/turbulenceModels/RAS/kEpsilonLagEB/kEpsilonLagEB.C
     
     // Update epsilon and G at the wall
     omega_.boundaryFieldRef().updateCoeffs();
@@ -612,12 +604,12 @@ void kOmegaLagEB<BasicTurbulenceModel>::correct()
             )
           , phit_
         )
-        /*+ alpha()*rho()*
+        + alpha()*rho()*
         (
-            pow3(ebf_())*Cp3_/phiH_*betas_*omega_()
-            + pow3(ebf_())*(betas_*omega()/phiH_)*sqr(taus())
+            pow3(ebf_())*Cp3/phiH_*betas_*omega_()
+            + pow3(ebf_())*(betas_*omega_()/phiH_)*sqr(taus())
             *((C4s_*(A() & S()) - C5s_*(A() & WTilde())) && S())
-        )*/
+        )
       + fvOptions(alpha, rho, phit_)
     );
 
@@ -627,17 +619,17 @@ void kOmegaLagEB<BasicTurbulenceModel>::correct()
     fvOptions.correct(phit_);
     bound(phit_, phitMin_);
     
-    /*
+    
     // Bounding phit
     
     forAll(phit_, celli)
     {
-        if(phit_[celli] > 1.0)
+        if(phit_[celli] > 2.0)
         {
-            phit_[celli] = 1.0;
+            phit_[celli] = 2.0;
         }
     }
-    */
+    
     correctNut();
 }
 
