@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2019-2021 OpenCFD Ltd.
+    Copyright (C) 2024 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -30,7 +30,7 @@ Group
     grpRASTurbulence
 
 Description
-    The k-epsilon Lag Elliptic-Blending turbulence closure model for incompressible and
+    The k-omega Lag Elliptic-Blending turbulence closure model for incompressible and
     compressible flows.
 
     The model is a three-transport-equation linear-eddy-viscosity turbulence
@@ -39,19 +39,24 @@ Description
     \heading Input fields
     \plaintable
         k         | Turbulent kinetic energy [m2/s2]
-        omega        
+        omega     | Turbulent specific dissipation rate [1/s]
         phit      | Lag between stress-strain [-]
-        ebf         | Elliptic blending factor [-]
+        ebf       | Elliptic blending factor [-]
     \endplaintable
 
     Reference:
     \verbatim
-        Standard model (Tag:TLLP):
-            Laurence
-            Tunstall, R., Lardeau, S., Laurence, D., Prosser, R. (2016).
-            An Elliptic Blending Lag Model for Flows in Thermal-Hydraulics Systems
-            ETMM11 Conference
-            https://www.researchgate.net/publication/308413285_AN_ELLIPTIC_BLENDING_LAG_MODEL_FOR_FLOWS_IN_THERMAL-HYDRAULICS_SYSTEMS
+        Standard models
+        (Tag:BDM):
+        Rajarshi Biswas, Paul A. Durbin, Gorazd Medic
+        Development of an elliptic blending lag k-omega model
+        International Journal of Heat and Fluid Flow 76 (2019) 
+        DOI: 10.2514/6.2016-1600
+        (Tag:TLLP):
+        Tunstall, R., Lardeau, S., Laurence, D., Prosser, R. (2016).
+        An Elliptic Blending Lag Model for Flows in Thermal-Hydraulics Systems
+        ETMM11 Conference
+
     \endverbatim
 
     The default model coefficients are:

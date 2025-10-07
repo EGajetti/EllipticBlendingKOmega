@@ -2,11 +2,10 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | www.openfoam.com
+    \\  /    A nd           |
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2013-2016 OpenFOAM Foundation
-    Copyright (C) 2022 OpenCFD Ltd.
+    Copyright (C) 2024 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -26,11 +25,18 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "turbulentTransportModels.H"
+#include "IncompressibleTurbulenceModel.H"
+#include "incompressible/transportModel/transportModel.H"
+#include "addToRunTimeSelectionTable.H"
+#include "makeTurbulenceModel.H"
+
+#include "laminarModel.H"
+#include "RASModel.H"
+#include "LESModel.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-defineTurbulenceModelTypes
+makeTurbulenceModelTypes
 (
     geometricOneField,
     geometricOneField,
@@ -39,33 +45,17 @@ defineTurbulenceModelTypes
     transportModel
 );
 
-makeBaseTurbulenceModel
-(
-    geometricOneField,
-    geometricOneField,
-    incompressibleTurbulenceModel,
-    IncompressibleTurbulenceModel,
-    transportModel
-);
+#define makeLaminarModel(Type)                                                 \
+    makeTemplatedTurbulenceModel                                               \
+    (transportModelIncompressibleTurbulenceModel, laminar, Type)
 
+#define makeRASModel(Type)                                                     \
+    makeTemplatedTurbulenceModel                                               \
+    (transportModelIncompressibleTurbulenceModel, RAS, Type)
 
-// -------------------------------------------------------------------------- //
-// Laminar models
-// -------------------------------------------------------------------------- //
+#define makeLESModel(Type)                                                     \
+    makeTemplatedTurbulenceModel                                               \
+    (transportModelIncompressibleTurbulenceModel, LES, Type)
 
-// -------------------------------------------------------------------------- //
-// RAS models
-// -------------------------------------------------------------------------- //
-
-//#include "kEpsilonEB.H"
-//makeRASModel(kEpsilonEB);
-
-
-#include "kOmegaLagEB.H"
-makeRASModel(kOmegaLagEB);
-
-// -------------------------------------------------------------------------- //
-// LES models
-// -------------------------------------------------------------------------- //
 
 // ************************************************************************* //

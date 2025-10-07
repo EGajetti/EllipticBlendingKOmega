@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2019-2020 OpenCFD Ltd.
+    Copyright (C) 2024 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -38,7 +38,7 @@ namespace RASModels
 
 // * * * * * * * * * * * Protected Member Functions  * * * * * * * * * * * * //
 
-// Compute the turbulent viscosity (TLLP:Eq.10)
+// Compute the turbulent viscosity (BDM: Appendix)
 template<class BasicTurbulenceModel>
 void kOmegaLagEB<BasicTurbulenceModel>::correctNut()
 {   
@@ -63,7 +63,7 @@ void kOmegaLagEB<BasicTurbulenceModel>::correctNut()
 }
 
 
-// Compute the turbulent length scale (TLLP:Eq.12)
+// Compute the turbulent length scale (BDM: Appendix)
 template<class BasicTurbulenceModel>
 tmp<volScalarField> kOmegaLagEB<BasicTurbulenceModel>::Ls() const
 {
@@ -425,66 +425,44 @@ void kOmegaLagEB<BasicTurbulenceModel>::correct()
  
     // Compute strain, vorticity and anisotropy tensors
     tmp<volTensorField> tgradU = fvc::grad(U);
+
     // Mean strain rate tensor
-    volTensorField S
+    const volSymmTensorField S
     (
-        0.5*(tgradU() + tgradU().T())
+        symm(tgradU())
     );
+
     volScalarField magS
     (
         sqrt(2.0)*mag(S)
     );
+
     // Mean vorticity tensor
-    volTensorField W
+        const volTensorField W
     (
         0.5*(tgradU() - tgradU().T())
     );
     tgradU.clear();
 
-    // Definition of components of the mean strain rate
-    volScalarField Sxx_(S.component(tensor::XX));
-    volScalarField Sxy_(S.component(tensor::XY));
-    volScalarField Sxz_(S.component(tensor::XZ));
-    volScalarField Syx_(S.component(tensor::YX));
-    volScalarField Syy_(S.component(tensor::YY));
-    volScalarField Syz_(S.component(tensor::YZ));
-    volScalarField Szx_(S.component(tensor::ZX));
-    volScalarField Szy_(S.component(tensor::ZY));
-    volScalarField Szz_(S.component(tensor::ZZ));
-    
-    // Defition of S*DS/Dt
-   volTensorField SDS(S);
+    const volSymmTensorField DSDiv_(fvc::ddt(S) + fvc::div(this->phi(), S) - S * fvc::div(U));
+                                
+    const volTensorField SDS 
+    (
+        (S & DSDiv_.T())/(2.0*magSqr(S))
+    );
 
-    SDS.component(tensor::XY) = (Sxx_*(fvc::ddt(Syx_)+fvc::div(this->phi(),Syx_))
-                              + Sxy_*(fvc::ddt(Syy_)+fvc::div(this->phi(),Syy_))
-                              + Sxz_*(fvc::ddt(Syz_)+fvc::div(this->phi(),Syz_)))/(sqr(magS));
-    SDS.component(tensor::XZ) = (Sxx_*(fvc::ddt(Szx_)+fvc::div(this->phi(),Szx_))
-                              + Sxy_*(fvc::ddt(Szy_)+fvc::div(this->phi(),Szy_))
-                              + Sxz_*(fvc::ddt(Szz_)+fvc::div(this->phi(),Szz_)))/(sqr(magS));                          
-    SDS.component(tensor::YX) = (Syx_*(fvc::ddt(Sxx_)+fvc::div(this->phi(),Sxx_))
-                              + Syy_*(fvc::ddt(Sxy_)+fvc::div(this->phi(),Sxy_))
-                              + Syz_*(fvc::ddt(Sxz_)+fvc::div(this->phi(),Sxz_)))/(sqr(magS));  
-    SDS.component(tensor::YZ) = (Syx_*(fvc::ddt(Szx_)+fvc::div(this->phi(),Szx_))
-                              + Syy_*(fvc::ddt(Szy_)+fvc::div(this->phi(),Szy_))
-                              + Syz_*(fvc::ddt(Szz_)+fvc::div(this->phi(),Szz_)))/(sqr(magS));  
-    SDS.component(tensor::ZX) = (Szx_*(fvc::ddt(Sxx_)+fvc::div(this->phi(),Sxx_))
-                              + Szy_*(fvc::ddt(Sxy_)+fvc::div(this->phi(),Sxy_))
-                              + Szz_*(fvc::ddt(Sxz_)+fvc::div(this->phi(),Sxz_)))/(sqr(magS));  
-    SDS.component(tensor::ZY) = (Szx_*(fvc::ddt(Syx_)+fvc::div(this->phi(),Syx_))
-                              + Szy_*(fvc::ddt(Syy_)+fvc::div(this->phi(),Syy_))
-                              + Szz_*(fvc::ddt(Syz_)+fvc::div(this->phi(),Syz_)))/(sqr(magS));
-    
     // Spalart-Shur curvature correction for vorticity tensor (TLLP:Eq.20)
-    volTensorField WTilde
+    const volTensorField WTilde
     (
         W - 2.0*skew(SDS)
     );
 
     // Anisotropy tensor (TLLP:Eq.18)
+    const dimensionedScalar beta2_ = scalar(2.0)*(scalar(1.0) - C5_)/(C1_ + C1s_ + scalar(1.0));
     volTensorField A
     (
-        -2*nut/k_*(S + 2.0*(2.0-2.0*C5_)/(C1_+C1s_+1.0)
-        *((S&WTilde)-(WTilde&S))/(mag(S+WTilde)))
+        -scalar(2.0)*nut/k_*(S + scalar(2.0)*beta2_*((S & WTilde) - (WTilde & S))/
+        (mag(S + WTilde)))
     );
 
     volScalarField taus(1.0/magS);
@@ -521,7 +499,7 @@ void kOmegaLagEB<BasicTurbulenceModel>::correct()
     // Update epsilon and G at the wall
     omega_.boundaryFieldRef().updateCoeffs();
 
-    // Turbulent kinetic energy dissipation rate equation  (TLLP:Eq.6)
+    // Turbulent specific dissipation rate equation  (BDM:Eq.19)
     // omega
     tmp<fvScalarMatrix> omegaEqn
     (
@@ -550,8 +528,8 @@ void kOmegaLagEB<BasicTurbulenceModel>::correct()
     bound(omega_, this->omegaMin_);
 
 
-    // Turbulent kinetic energy equation (TLLP:Eq.5)
-    // epsilon/k ~ 1/Ts
+    // Turbulent kinetic energy equation (BDM:Eq.19)
+    // k
     tmp<fvScalarMatrix> kEqn
     (
         fvm::ddt(alpha, rho, k_)
@@ -571,7 +549,7 @@ void kOmegaLagEB<BasicTurbulenceModel>::correct()
     bound(k_, this->kMin_);
 
 
-// Elliptic blending function equation (TLLP:Eq.11)
+// Elliptic blending function equation (BDM:Eq.20)
     tmp<fvScalarMatrix> ebfEqn
    (
     -fvm::laplacian(ebf_)
@@ -585,7 +563,7 @@ void kOmegaLagEB<BasicTurbulenceModel>::correct()
     fvOptions.correct(ebf_);
     bound(ebf_, this->ebfMin_);
 
-// Stress-strain lag equation (TLLP:Eq.9)
+// Stress-strain lag equation (BDM:Eq.21)
     tmp<fvScalarMatrix> phitEqn
     (
         fvm::ddt(alpha, rho, phit_)
