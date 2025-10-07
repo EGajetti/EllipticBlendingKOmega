@@ -1,4 +1,4 @@
-# EllipticBlending
+# EllipticBlendingKOmega
 This project aims at implementing the k-omega Lag Elliptic Blending turbulent model for OpenFOAM. 
 
 ## Software requirements
