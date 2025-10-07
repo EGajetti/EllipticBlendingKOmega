@@ -1,4 +1,4 @@
 SOURCE = \
-turbulentTransportModels/myTurbulentTransportModels.C \
+turbulentTransportModels.C \
 
 # sources

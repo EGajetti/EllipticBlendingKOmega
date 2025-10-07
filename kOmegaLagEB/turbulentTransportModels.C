@@ -31,6 +31,6 @@ License
 
 #include "kOmegaLagEB.H"
 
-makeRASModel(komegaLagEB);
+makeRASModel(kOmegaLagEB);
 
 // ************************************************************************* //
