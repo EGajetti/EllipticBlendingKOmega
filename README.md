@@ -8,7 +8,7 @@ The model has been developed and tested in [OpenFOAM v2212](https://www.openfoam
 ## Usage
 
 ### Model source code
-In the folder ```TurbulenceModels/turbulenceModels/RAS/kOmegaLagEB``` you can find the implementation of the model in OpenFOAM.
+In the folder ```kOmegaLagEB``` you can find the implementation of the model in OpenFOAM.
 
 
 ## References
